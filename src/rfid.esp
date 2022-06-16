@@ -309,7 +309,11 @@ void rfidProcess()
 		} else if (!officeHour)
 		{
 			processingState = notValid;
+<<<<<<< HEAD
 		} else
+=======
+		}else
+>>>>>>> 99372a6 (fixed missing else condition on rfid.esp to enable only (normal) users in the officehour and rebuild webfile because the boxes to select the office hours are not visible)
 		{
 			processingState = valid;
 		}
