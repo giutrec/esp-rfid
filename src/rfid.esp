@@ -309,7 +309,7 @@ void rfidProcess()
 		} else if (!officeHour)
 		{
 			processingState = notValid;
-		} else
+		}else
 		{
 			processingState = valid;
 		}
