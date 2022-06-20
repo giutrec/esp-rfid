@@ -309,13 +309,9 @@ void rfidProcess()
 		} else if (!officeHour)
 		{
 			processingState = notValid;
-<<<<<<< HEAD
 
 		} else
 		{
-=======
-		}else
->>>>>>> 3b0b9d9 (risolto i conflitti Git)
 			processingState = valid;
 		}
 	} else if (accountType == ACCESS_ADMIN)
