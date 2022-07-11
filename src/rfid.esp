@@ -311,6 +311,7 @@ void rfidProcess()
 			processingState = notValid;
 
 		} else
+		{
 			processingState = valid;
 		}
 	} else if (accountType == ACCESS_ADMIN)
