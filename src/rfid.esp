@@ -284,26 +284,63 @@ void rfidProcess()
 		Serial.print(username);
 #endif
 
-	if (accountType == ACCESS_GRANTED)
+	if (accountType == ACCESS_ALWAYS || accountType == ACCESS_ADMIN)
 	{
 		unsigned long validL = json["validuntil"];
 		unsigned long nowL = now();
-		int hourTz = hour() + config.timeZone;
-		bool officeHour = config.openingHours[weekdayFromMonday(weekday())][hourTz] == '1';
-		if (validL < nowL)
+//		int hourTz = hour() + config.timeZone;
+//		bool officeHour = config.openingHours[weekdayFromMonday(weekday())][hourTz] == '1';
+		if ((validL < nowL) && accountType == ACCESS_ALWAYS) 
 		{
 			processingState = expired;
-		} else if (!officeHour)
-		{
-			processingState = notValid;
 		} else
 		{
 			processingState = valid;
 		}
-	} else if (accountType == ACCESS_ADMIN)
-	{
+		
+		if (accountType == ACCESS_ADMIN)
+		{
 		doEnableWifi = true;
 		processingState = validAdmin;
+		}
+	} else if (accountType == ACCESS_HOURS)
+	{
+		unsigned long validL = json["validuntil"];
+		int hourF = json["fromhour"];
+		int hourU = json["untilhour"];
+		time_t nowL = now() + (config.timeZone * 3600);
+		if ((hour(nowL) >= (hourU - 1) && hour(nowL) <= (hourF - 1)) && (validL < nowL))
+		{
+			processingState = valid;
+		} else {
+			processingState = expired;
+		}
+	} else if (accountType == ACCESS_DAYS)
+	{
+		unsigned long validL = json["validuntil"];
+		int weekdayF = json["fromweekday"];
+		int weekdayU = json["untilweekday"];
+		time_t nowL = now() + (config.timeZone * 3600);
+		if ((weekday(nowL) >= weekdayU && weekday(nowL) <= weekdayF) && (validL < nowL))
+		{
+			processingState = valid;
+		} else {
+			processingState = expired;
+		}
+	} else if (accountType == ACCESS_HOURS_DAYS)
+	{
+		unsigned long validL = json["validuntil"];
+		int hourF = json["fromhour"];
+		int hourU = json["untilhour"];
+		int weekdayF = json["fromweekday"];
+		int weekdayU = json["untilweekday"];
+		time_t nowL = now() + (config.timeZone * 3600);
+		if ((day(nowL) >= day(validF) && day(nowL) <= day(validL)) && (validL < nowL))
+		{
+			processingState = valid;
+		} else {
+			processingState = expired;
+		}
 	} else {
 		processingState = notValid;
 	}
@@ -315,7 +352,7 @@ void rfidProcess()
 			if (currentRelay == 0) {
 				activateRelay[currentRelay] = true;
 			} else {
-				bool isRelayActive = json["acctype" + String(currentRelay + 1)] == ACCESS_GRANTED;
+				bool isRelayActive = json["acctype" + String(currentRelay + 1)] == ACCESS_ALWAYS;
 				activateRelay[currentRelay] = isRelayActive;
 			}
 			if (processingState == validAdmin)
@@ -334,7 +371,7 @@ void rfidOutsideMessaging()
 #ifdef DEBUG
 		Serial.printf(" has access relay");
 #endif
-		mqttPublishAccess(now(), "true", "Always", username, uid);
+		mqttPublishAccess(now(), "true", "Valid", username, uid);
 		beeperValidAccess();
 	}
 	if (processingState == validAdmin)
