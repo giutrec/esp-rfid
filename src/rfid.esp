@@ -288,8 +288,6 @@ void rfidProcess()
 	{
 		unsigned long validL = json["validuntil"];
 		unsigned long nowL = now();
-//		int hourTz = hour() + config.timeZone;
-//		bool officeHour = config.openingHours[weekdayFromMonday(weekday())][hourTz] == '1';
 		if ((validL < nowL) && accountType == ACCESS_ALWAYS) 
 		{
 			processingState = expired;
@@ -309,7 +307,7 @@ void rfidProcess()
 		int hourF = json["fromhour"];
 		int hourU = json["untilhour"];
 		time_t nowL = now() + (config.timeZone * 3600);
-		if ((hour(nowL) >= (hourU - 1) && hour(nowL) <= (hourF - 1)) && (validL < nowL))
+		if ((hour(nowL) <= (hourU - 1) && hour(nowL) >= (hourF - 1)) && (validL < nowL))
 		{
 			processingState = valid;
 		} else {
@@ -321,7 +319,7 @@ void rfidProcess()
 		int weekdayF = json["fromweekday"];
 		int weekdayU = json["untilweekday"];
 		time_t nowL = now() + (config.timeZone * 3600);
-		if ((weekday(nowL) >= weekdayU && weekday(nowL) <= weekdayF) && (validL < nowL))
+		if ((weekday(nowL) <= weekdayU && weekday(nowL) >= weekdayF) && (validL < nowL))
 		{
 			processingState = valid;
 		} else {
@@ -335,13 +333,35 @@ void rfidProcess()
 		int weekdayF = json["fromweekday"];
 		int weekdayU = json["untilweekday"];
 		time_t nowL = now() + (config.timeZone * 3600);
-		if ((day(nowL) >= day(validF) && day(nowL) <= day(validL)) && (validL < nowL))
+		if ((day(nowL) >= day(weekdayF) && day(nowL) <= day(weekdayU)) && (hour(nowL) <= (hourU - 1) && hour(nowL) >= (hourF - 1)) && (validL < nowL))
 		{
 			processingState = valid;
 		} else {
 			processingState = expired;
 		}
-	} else {
+	} else if (accountType == ACCESS_WEEKENDS)
+	{
+		unsigned long validL = json["validuntil"];
+		int weekend = json["accessweekends"];
+		time_t nowL = now() + (config.timeZone * 3600);
+		if (weekday(nowL) != weekday())
+		{
+			processingState = valid;
+		} else {
+			processingState = expired;
+		}
+	} else if (accountType == ACCESS_WEEKDAYS)
+	{
+		unsigned long validL = json["validuntil"];
+		int weekend = json["accessweekdays"];
+		time_t nowL = now() + (config.timeZone * 3600);
+		if (weekday(nowL) == weekday())
+		{
+			processingState = valid;
+		} else {
+			processingState = expired;
+		}
+	}else {
 		processingState = notValid;
 	}
 
@@ -349,19 +369,11 @@ void rfidProcess()
 	{
 		for (int currentRelay = 0; currentRelay < config.numRelays; currentRelay++)
 		{
-			if (currentRelay == 0) {
-				activateRelay[currentRelay] = true;
-			} else {
-				bool isRelayActive = json["acctype" + String(currentRelay + 1)] == ACCESS_ALWAYS;
-				activateRelay[currentRelay] = isRelayActive;
-			}
-			if (processingState == validAdmin)
-			{
-				activateRelay[currentRelay] = true;
-			}
+			activateRelay[currentRelay] = true;
 		}
 	}
 }
+
 
 void rfidOutsideMessaging()
 {
